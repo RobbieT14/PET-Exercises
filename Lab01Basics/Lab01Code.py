@@ -180,7 +180,7 @@ def point_scalar_multiplication_double_and_add(a, b, p, x, y, scalar):
     
     for i in range(scalar.num_bits()):
         if scalar.is_bit_set(i):	#reads bits from right to left so don't have to convert to str representation of binary (low to high)
-    		Q = point_add(a, b, p, Q[0], Q[1], P[0], P[1])	
+        	Q = point_add(a, b, p, Q[0], Q[1], P[0], P[1])	
     	P = point_double(a, b, p, P[0], P[1])
 
     return Q
@@ -208,11 +208,11 @@ def point_scalar_multiplication_montgomerry_ladder(a, b, p, x, y, scalar):
 
     for i in reversed(range(0,scalar.num_bits())):
         if not scalar.is_bit_set(i):
-    		R1 = point_add(a, b, p, R0[0], R0[1], R1[0], R1[1])
-    		R0 = point_double(a, b, p, R0[0], R0[1])
+        	R1 = point_add(a, b, p, R0[0], R0[1], R1[0], R1[1])
+        	R0 = point_double(a, b, p, R0[0], R0[1])
 	else:
-    		R0 = point_add(a, b, p, R0[0], R0[1], R1[0], R1[1])
-    		R1 = point_double(a, b, p, R1[0], R1[1])
+        	R0 = point_add(a, b, p, R0[0], R0[1], R1[0], R1[1])
+        	R1 = point_double(a, b, p, R1[0], R1[1])
 
     return R0
 
