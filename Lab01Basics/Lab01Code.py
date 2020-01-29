@@ -112,13 +112,13 @@ def point_add(a, b, p, x0, y0, x1, y1):
 
 #return other point if one set of points at infinity
     if x0 is None and y0 is None:
-	return x1,y1
+    	return x1,y1
 
     if x1 is None and y1 is None:
-	return x0,y0
+    	return x0,y0
 
     if x0 == x1 and y0 == y1:
-	raise Exception("EC Points must not be equal")
+    	raise Exception("EC Points must not be equal")
 
     if x0 == x1 and y0 != y1:
     	return None, None
