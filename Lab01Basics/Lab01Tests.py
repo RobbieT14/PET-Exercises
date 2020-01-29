@@ -125,8 +125,8 @@ def test_on_curve():
     gx, gy = g.get_affine()
 
     from Lab01Code import is_point_on_curve
-    assert is_point_on_curve(a, b, p, gx, gy)
 
+    assert is_point_on_curve(a, b, p, gx, gy)
     assert is_point_on_curve(a, b, p, None, None)
 
 @pytest.mark.task3
