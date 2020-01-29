@@ -142,11 +142,11 @@ def point_double(a, b, p, x, y):
 
 
     if not is_point_on_curve(a, b, p, x, y):
-	raise Exception("Points not on curve")
+    	raise Exception("Points not on curve")
 
     #if points are neutral, results will be neutral
     if x is None and y is None:
-	return None, None
+    	return None, None
     
 
 
