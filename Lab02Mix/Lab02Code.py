@@ -152,7 +152,7 @@ def mix_client_one_hop(public_key, address, message):
     h = Hmac(b"sha512", hmac_key)        
     h.update(address_cipher)
     h.update(message_cipher)
-    expected_mac = h.digest()[:20]
+    expected_mac = h.digest()[:20] 	## length of hmac needs to be 20
 
 
 
@@ -284,7 +284,69 @@ def mix_client_n_hop(public_keys, address, message):
     private_key = G.order().random()
     client_public_key  = private_key * G.generator()
 
-    ## ADD CODE HERE
+
+    shared_keys = []
+
+
+    # PART 1
+    # use of a blinding factor to provide bit-wise unlikability of 
+    # the public key associated with the message
+    for public_key in public_keys:
+        # get a shared key
+        shared_element = private_key * public_key
+        key_material = sha512(shared_element.export()).digest()
+
+      
+    	# store into list from back to front
+        shared_keys = [key_material] + shared_keys
+        
+        # update private key value of client with a blinding factor for next shared key derivation
+        private_key = private_key * Bn.from_binary(key_material[48:]) 
+
+    address_cipher = address_plaintext
+    message_cipher = message_plaintext
+
+
+
+    # PART 2
+    # inclusion of a (list) of hmacs as the second part of the mix message
+    # done in reverse order to compute hmacs
+    hmacs = []  	
+    for i, public_key in enumerate(reversed(shared_keys)):
+        
+        # Use different parts of the shared key for different operations
+        hmac_key = shared_keys[i][:16]
+        address_key = shared_keys[i][16:32]
+        message_key = shared_keys[i][32:48]
+
+        # Ecrypt the address and the message
+        iv = b"\x00" * 16
+
+
+        address_cipher = aes_ctr_enc_dec(address_key, iv, address_cipher)
+        message_cipher = aes_ctr_enc_dec(message_key, iv, message_cipher)
+
+        # Check HMAC
+        h = Hmac(b"sha512", hmac_key)
+        
+    	# PART 3
+        # Encryption of the hmacs (in addition to the address and message) at each step of mixing
+    	
+    	# loop skipped on first call
+        for j, other_hmac in enumerate(hmacs):
+            # Ensure the IV is different for each hmac 
+            iv = pack("H14s", j, b"\x00" * 14)
+            hmacs[j] = aes_ctr_enc_dec(hmac_key, iv, other_hmac)
+            h.update(hmacs[j]) 
+
+  
+        h.update(address_cipher)
+        h.update(message_cipher)
+       
+
+        hmacs = [h.digest()[:20]] + hmacs	## add result to hmacs list
+
+
 
     return NHopMixMessage(client_public_key, hmacs, address_cipher, message_cipher)
 
@@ -334,9 +396,14 @@ def analyze_trace(trace, target_number_of_friends, target=0):
     friends of the target.
     """
 
-    ## ADD CODE HERE
+    friendCounter = Counter()
+    for senders, receivers in trace:	# each round of anonymity system
+    	if target in senders:		## receivers in Alice (target 0) sending
+        	for r in receivers:
+                	friendCounter[r] += 1
 
-    return []
+    return [r for r, _ in friendCounter.most_common(target_number_of_friends)]  	## returns list of target number of friends most common amount
+
 
 ## TASK Q1 (Question 1): The mix packet format you worked on uses AES-CTR with an IV set to all zeros. 
 #                        Explain whether this is a security concern and justify your answer.
