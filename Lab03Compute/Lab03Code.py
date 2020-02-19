@@ -32,7 +32,8 @@ def keyGen(params):
    (G, g, h, o) = params
    
    # ADD CODE HERE
-
+   priv = G.order().random()
+   pub = priv * g
    return (priv, pub)
 
 def encrypt(params, pub, m):
@@ -41,7 +42,9 @@ def encrypt(params, pub, m):
         raise Exception("Message value to low or high.")
 
    # ADD CODE HERE
-
+    G, g, h, o = params
+    k = G.order().random()
+    c = (k * g, k * pub + m * h)
     return c
 
 def isCiphertext(params, ciphertext):
@@ -75,8 +78,8 @@ def decrypt(params, priv, ciphertext):
     assert isCiphertext(params, ciphertext)
     a , b = ciphertext
 
-   # ADD CODE HERE
-
+   # log: b * (a^x)^(-1)
+    hm = b - priv * a
     return logh(params, hm)
 
 #####################################################
@@ -91,8 +94,10 @@ def add(params, pub, c1, c2):
     assert isCiphertext(params, c1)
     assert isCiphertext(params, c2)
 
-   # ADD CODE HERE
-
+   # E(m1 + m2, k1 + k2) = (a1a2, b1b2)
+    a1, b1 = c1
+    a2, b2 = c2
+    c3 = (a1 + a2, b1 + b2)
     return c3
 
 def mul(params, pub, c1, alpha):
@@ -100,8 +105,9 @@ def mul(params, pub, c1, alpha):
         product of the plaintext time alpha """
     assert isCiphertext(params, c1)
 
-   # ADD CODE HERE
-
+   # E(cm0, ck0) = (a0^c, b0^c)
+    a0, b0 = c1
+    c3 = alpha*a0, alpha*b0
     return c3
 
 #####################################################
@@ -113,8 +119,10 @@ def groupKey(params, pubKeys=[]):
     """ Generate a group public key from a list of public keys """
     (G, g, h, o) = params
 
-   # ADD CODE HERE
-
+   # pk = g^(x1 + ... xn)
+    pub = pubKeys[0]
+    for public_key in pubKeys[1:]:
+    	pub += public_key
     return pub
 
 def partialDecrypt(params, priv, ciphertext, final=False):
@@ -123,6 +131,11 @@ def partialDecrypt(params, priv, ciphertext, final=False):
     assert isCiphertext(params, ciphertext)
     
     # ADD CODE HERE
+    a1, b1 = ciphertext
+
+
+    # b * (a^x)^(-1)
+    b1 -= priv * a1
 
     if final:
         return logh(params, b1)
@@ -142,9 +155,13 @@ def corruptPubKey(params, priv, OtherPubKeys=[]):
         corrupt authority. """
     (G, g, h, o) = params
     
-   # ADD CODE HERE
+   # legitimate public key
+    pub = OtherPubKeys[0]
+    for public_key in OtherPubKeys[1:]:
+    	pub += public_key
 
-    return pub
+    bad_public_key = priv * g		# derive bad public key
+    return bad_public_key - pub		#returns corrupted pk 
 
 #####################################################
 # TASK 5 -- Implement operations to support a simple
@@ -157,8 +174,15 @@ def encode_vote(params, pub, vote):
         zero and the votes for one."""
     assert vote in [0, 1]
 
-   # ADD CODE HERE
+   # if vote is 0; v0 = 1 & v1 = 0
+    if vote == 0:
+    	c0, c1 = 1, 0
+   # if vote is 1; v0 = 0 & v1 = 1 
+    else:
+    	c0, c1 = 0, 1
 
+    v0 = encrypt(params, pub, c0)
+    v1 = encrypt(params, pub, c1)
     return (v0, v1)
 
 def process_votes(params, pub, encrypted_votes):
@@ -166,8 +190,11 @@ def process_votes(params, pub, encrypted_votes):
         to sum votes for zeros and votes for ones. """
     assert isinstance(encrypted_votes, list)
     
-   # ADD CODE HERE
-
+   # initialize
+    tv0, tv1 = encrypted_votes[0]
+    for v0, v1 in encrypted_votes[1:]: 		#total each vote 
+    	tv0 = add(params, pub, v0, tv0)
+    	tv1 = add(params, pub, v1, tv1) 
     return tv0, tv1
 
 def simulate_poll(votes):
