@@ -52,7 +52,10 @@ def proveKey(params, priv, pub):
     (G, g, hs, o) = params
     
     ## YOUR CODE HERE:
-    
+    w = o.random()			# random witness
+    W = w * g				# formula 
+    c = to_challenge([g, W])		# challenge
+    r = (w - c * priv) % o		# response
     return (c, r)
 
 def verifyKey(params, pub, proof):
@@ -91,9 +94,26 @@ def proveCommitment(params, C, r, secrets):
     (G, g, (h0, h1, h2, h3), o) = params
     x0, x1, x2, x3 = secrets
 
-    ## YOUR CODE HERE:
+    ## random witnesses
+    w0 = o.random()
+    w1 = o.random()
+    w2 = o.random()
+    w3 = o.random()
+    wr = o.random()
 
-    return (c, responses)
+    # Witness W has the same "shape" as commitment
+    W = w0 * h0 + w1 * h1 + w2 * h2 + w3 * h3 + wr * g
+
+    c = to_challenge([g, h0, h1, h2, h3, W])
+
+    # response = w - cx (mod q)
+    r0 = (w0 - c * x0) % o
+    r1 = (w1 - c * x1) % o
+    r2 = (w2 - c * x2) % o
+    r3 = (w3 - c * x3) % o
+    rr = (wr - c * r) % o
+    
+    return (c, [r0, r1, r2, r3, rr])
 
 def verifyCommitments(params, C, proof):
     """ Verify a proof of knowledge of the commitment.
@@ -139,8 +159,10 @@ def verifyDLEquality(params, K, L, proof):
     c, r = proof
 
     ## YOUR CODE HERE:
-
-    return # YOUR RETURN HERE
+    K_prime = c * K + r * g	# k^c + g^r
+    L_prime = c * L + r * h0	# h0 is generator
+    
+    return to_challenge([g, h0, K_prime, L_prime]) == c
 
 #####################################################
 # TASK 4 -- Prove correct encryption and knowledge of 
@@ -164,6 +186,16 @@ def proveEnc(params, pub, Ciphertext, k, m):
     a, b = Ciphertext
 
     ## YOUR CODE HERE:
+    wk = o.random()
+    wm = o.random()
+
+    Wa = wk * g
+    Wb = wm * h0 + wk * pub  
+
+    c = to_challenge([g, h0, Wa, Wb])
+
+    rk = (wk - c * k) % o
+    rm = (wm - c * m) % o
 
     return (c, (rk, rm))
 
@@ -174,8 +206,10 @@ def verifyEnc(params, pub, Ciphertext, proof):
     (c, (rk, rm)) = proof
 
     ## YOUR CODE HERE:
+    a_prime = c * a + rk * g
+    b_prime = c * b + rm * h0 + rk * pub 
 
-    return ## YOUR RETURN HERE
+    return to_challenge([g, h0, a_prime, b_prime]) == c
 
 
 #####################################################
@@ -199,16 +233,34 @@ def prove_x0eq10x1plus20(params, C, x0, x1, r):
     (G, g, (h0, h1, h2, h3), o) = params
 
     ## YOUR CODE HERE:
+    wr = o.random()
+    w_x1 = o.random()
 
-    return ## YOUR RETURN HERE
+ 
+    # similar to commitment
+    W = wr * g + w_x1 * h1 + (10 * w_x1 + 20) * h0
+
+    c = to_challenge([g, h0, h1, C, W])
+
+
+    r1 = (w_x1 - c * x1) % o
+    rr = (wr - c * r) % o
+
+    return c, [r1, rr]
 
 def verify_x0eq10x1plus20(params, C, proof):
     """ Verify that proof of knowledge of C and x0 = 10 x1 + 20. """
     (G, g, (h0, h1, h2, h3), o) = params
 
     ## YOUR CODE HERE:
+    c, responses = proof
+ 
+    r1, rr = responses
 
-    return ## YOUR RETURN HERE
+    # analogous to the formula for W above, but include the challenge & commitment
+    CW_prime = c * C + rr * g + r1 * h1 + (10 * r1 + 20) * h0 - 20 * c * h0  
+
+    return to_challenge([g, h0, h1, C, CW_prime]) == c
 
 #####################################################
 # TASK 6 -- (OPTIONAL) Prove that a ciphertext is either 0 or 1
